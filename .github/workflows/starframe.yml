@@ -1,0 +1,57 @@
+name: Starframe Windows build
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust 1.95.0
+        shell: pwsh
+        run: rustup toolchain install 1.95.0 --profile minimal --component rustfmt,clippy
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: starframe-windows-${{ hashFiles('Cargo.lock') }}
+      - name: Formatting and focused regression tests
+        shell: pwsh
+        run: |
+          cargo +1.95.0 fmt --all --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo +1.95.0 test -p photocraft-codecs --test fits -p photocraft-io --test fits
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cargo +1.95.0 test -p photocraft -p photocraft-ui-egui --lib --bins
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install verified Inno Setup compiler
+        shell: pwsh
+        run: |
+          $file = Join-Path $env:RUNNER_TEMP 'innosetup.exe'
+          Invoke-WebRequest 'https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe' -OutFile $file
+          if ((Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne '9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732') { throw 'Compiler checksum mismatch' }
+          $signature = Get-AuthenticodeSignature $file
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'Pyrsys') { throw 'Compiler signature mismatch' }
+          $tool = Join-Path $env:RUNNER_TEMP 'inno'
+          $process = Start-Process $file -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/CURRENTUSER',('/DIR="'+$tool+'"')) -Wait -PassThru -WindowStyle Hidden
+          if ($process.ExitCode -ne 0) { throw 'Compiler installation failed' }
+          "STARFRAME_ISCC=$tool\ISCC.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Build installer and portable archive
+        shell: pwsh
+        run: |
+          rustup default 1.95.0
+          ./packaging/starframe/build.ps1 -Iscc $env:STARFRAME_ISCC
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Starframe-FITS-Windows-x64
+          path: |
+            dist/*-setup.exe
+            dist/*-portable.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error

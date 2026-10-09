@@ -1,0 +1,3 @@
+Starframe FITS geometric app icon, original artwork (2026).
+Licensed under MIT OR Apache-2.0, like this project.
+No upstream ArtCraft brand artwork is included.
