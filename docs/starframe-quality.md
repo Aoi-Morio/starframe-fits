@@ -36,8 +36,8 @@ The Windows binaries are unsigned. Smart App Control or an enterprise applicatio
 
 Final Windows checks on 2026-10-10: 52 native app tests, 730 UI tests (3 opt-in tests skipped), 16 codec FITS tests and 4 document FITS tests passed. All 28 dependency layers and 23 Wasm targets/configurations passed. The Windows CI build also passed. Wasm emits existing unused-constant warnings; this is not a browser distribution.
 
-Installer and extracted ZIP both opened the synthetic FITS on the AMD Radeon hardware GPU with default settings, saved a layered document, and reopened it. The installer registered the Start Menu/Open-with entries without admin rights, excluded the portable marker, and removed its own entries on uninstall. PE imports contain Windows system DLLs and no external VCRUNTIME/MSVCP dependency. Original compiler source paths may be present in diagnostics; PDBs, credentials and private image data are not packaged.
+Installer and extracted ZIP both opened the synthetic FITS on the AMD Radeon hardware GPU with default settings, saved a layered document, and reopened it. The installer registered the Start Menu/Open-with entries without admin rights, excluded the portable marker, and removed its own entries on uninstall. PE imports contain Windows system DLLs and no external VCRUNTIME/MSVCP dependency. PDBs, credentials and private image data are not packaged. A final rebuild remaps personal build paths to `/build`; verification of that rebuild is pending.
 
-The initial binary was built from `a2dcf30`; subsequent release documentation does not change executable code. [Synthetic demo screenshot](images/starframe-demo.png).
+The application tests cover the code in `a2dcf30`; final packaging adds compiler path sanitization. [Synthetic demo screenshot](images/starframe-demo.png).
 
 The release notes record the completed gate. Windows x64 is the only binary distribution tested in this release. Existing upstream limitations in multi-layer editing/performance remain. WCS/header preservation, Bayer demosaicing, FITS export and nonlinear astronomical auto-stretch remain outside v1.

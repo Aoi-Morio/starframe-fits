@@ -1,5 +1,6 @@
 param([string]$Iscc, [switch]$SkipBuild)
 $ErrorActionPreference = 'Stop'
+$previousEncodedFlags = $env:CARGO_ENCODED_RUSTFLAGS
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 Push-Location $repo
 try {
@@ -13,6 +14,10 @@ try {
     $env:CARGO_PROFILE_RELEASE_LTO = 'false'
     $env:CARGO_PROFILE_RELEASE_CODEGEN_UNITS = '16'
     $env:CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS = '-C target-feature=+crt-static'
+    $taskBuildHome = [Environment]::GetFolderPath('UserProfile')
+    if (-not $taskBuildHome) { throw 'Cannot determine build home for path sanitization' }
+    $taskBuildHomeForward = $taskBuildHome.Replace('\','/')
+    $env:CARGO_ENCODED_RUSTFLAGS = [string]::Join([char]0x1f, @('-C', 'target-feature=+crt-static', ('--remap-path-prefix='+$taskBuildHome+'=/build'), ('--remap-path-prefix='+$taskBuildHomeForward+'=/build')))
     $env:PHOTOCRAFT_REQUIRE_WINRES = '1'
     if (-not $SkipBuild) {
         cargo build --locked --release --target x86_64-pc-windows-msvc -p photocraft -p photocraft-cli
@@ -26,6 +31,15 @@ try {
     if (Test-Path (Join-Path $stage 'StarframeData')) { throw 'Refusing to package runtime settings' }
     Copy-Item (Join-Path $bin 'photocraft.exe') (Join-Path $stage 'StarframeFITS.exe')
     Copy-Item (Join-Path $bin 'photocraft-cli.exe') $stage
+    foreach ($executable in @('StarframeFITS.exe','photocraft-cli.exe')) {
+        $bytes = [IO.File]::ReadAllBytes((Join-Path $stage $executable))
+        foreach ($encoding in @([Text.Encoding]::UTF8, [Text.Encoding]::Unicode)) {
+            $text = $encoding.GetString($bytes)
+            if ($text.IndexOf($taskBuildHome, [StringComparison]::OrdinalIgnoreCase) -ge 0 -or $text.IndexOf($taskBuildHomeForward, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+                throw 'Personal build path remains in executable; refusing to package it'
+            }
+        }
+    }
     foreach ($file in @('LICENSE-MIT','LICENSE-APACHE','NOTICE','ATTRIBUTION.md','README.md')) { Copy-Item (Join-Path $repo $file) $stage }
     foreach ($file in @('assets/fonts/OFL-Inter.txt','assets/fonts/OFL-JetBrainsMono.txt','assets/icons/LICENSE-lucide.txt','assets/dict/LICENSE-SCOWL.txt','assets/app-icon/LICENSE.txt','docs/brand/LICENSE-brand.txt')) {
         $destination = Join-Path $stage $file
@@ -42,4 +56,4 @@ try {
     $artifacts = @((Get-Item $zip), (Get-Item (Join-Path $dist "starframe-fits-$version-windows-x64-setup.exe")))
     $artifacts | ForEach-Object { $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(); "$hash  $($_.Name)" } | Set-Content (Join-Path $dist 'SHA256SUMS.txt') -Encoding ascii
     Write-Output 'Installer, portable archive and checksums created.'
-} finally { Pop-Location }
+} finally { $env:CARGO_ENCODED_RUSTFLAGS = $previousEncodedFlags; Pop-Location }

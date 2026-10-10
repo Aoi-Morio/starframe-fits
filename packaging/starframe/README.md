@@ -8,7 +8,7 @@ cargo test -p photocraft -p photocraft-ui-egui --lib --bins
 ./packaging/starframe/build.ps1 -Iscc 'C:/Program Files (x86)/Inno Setup 6/ISCC.exe'
 ```
 
-The script uses optimized release code (`opt-level=3`, no LTO, 16 codegen units) and `+crt-static` so no separately installed VC++ runtime is needed. Windows icon/version resources are required. For a portable SDK, set `RC_PATH` to its `x64/rc.exe`.
+The script uses optimized release code (`opt-level=3`, no LTO, 16 codegen units) and `+crt-static` so no separately installed VC++ runtime is needed. It remaps the builder's user-folder paths to `/build` and rejects executables containing the original path before packaging. Windows icon/version resources are required. For a portable SDK, set `RC_PATH` to its `x64/rc.exe`.
 Generated files are under `dist/`. Do not package `StarframeData`, private images, credentials, PDBs or user preferences.
 Only the synthetic `examples/fits/demo-stars.fits` is included.
 
