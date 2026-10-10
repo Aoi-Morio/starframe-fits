@@ -8,7 +8,7 @@ The importer/display implementation was validated before the distribution change
 - 47 GPU tests passed, including full-float HDR exposure, paged uploads, sparse edge tiles, alpha, tiny/large values and CPU/GPU comparison.
 - Malformed headers, truncation, duplicated keywords, non-finite/overflowing scales, unsupported layouts and allocation limits are rejected safely.
 - Synthetic FITS cases and three public NASA sample arrays were compared against an independent Astropy oracle; 1,320,720 sample values matched.
-- Two additional user-provided grayscale/RGB files were checked privately. No user images, FITS headers, original filenames, machine paths or screenshots of them are published here.
+- Two additional user-provided grayscale/RGB files were checked privately. No user images, FITS headers, original image filenames or screenshots of them are published here.
 - Native import, saving/reopening, exposure editing and malformed-file failure without losing the existing document were verified.
 - Formatting, clippy, dependency-layer checks, Wasm checks and panic-hunt validation passed for the importer work.
 
@@ -27,10 +27,17 @@ The Windows binaries are unsigned. Smart App Control or an enterprise applicatio
 - [x] README identifies the independent fork and names its exact upstream base.
 - [x] Known FITS limitations and unsigned Windows restrictions described before download.
 - [x] Installer script includes uninstall, isolated settings, optional desktop shortcut and Open-with registration.
-- [ ] Windows resources/version/icon embedded and static runtime linkage verified.
-- [ ] Fork UI/app regression tests and focused FITS tests passed.
-- [ ] Installer install/open/uninstall and portable startup smoke tests passed.
-- [ ] Synthetic-demo screenshot inspected for branding and usable display.
-- [ ] Source/package checksums, personal-data exclusions and release asset verification completed.
+- [x] Windows resources/version/icon embedded and static runtime linkage verified.
+- [x] Fork UI/app regression tests and focused FITS tests passed.
+- [x] Installer install/open/uninstall and portable startup smoke tests passed.
+- [x] Synthetic-demo screenshot inspected for usable display.
+- [x] Source/package checksums and private-image/credential exclusions verified.
+- [ ] Published release downloads independently fetched and checked against local SHA256SUMS.
+
+Final Windows checks on 2026-10-10: 52 native app tests, 730 UI tests (3 opt-in tests skipped), 16 codec FITS tests and 4 document FITS tests passed. All 28 dependency layers and 23 Wasm targets/configurations passed. The Windows CI build also passed. Wasm emits existing unused-constant warnings; this is not a browser distribution.
+
+Installer and extracted ZIP both opened the synthetic FITS on the AMD Radeon hardware GPU with default settings, saved a layered document, and reopened it. The installer registered the Start Menu/Open-with entries without admin rights, excluded the portable marker, and removed its own entries on uninstall. PE imports contain Windows system DLLs and no external VCRUNTIME/MSVCP dependency. Original compiler source paths may be present in diagnostics; PDBs, credentials and private image data are not packaged.
+
+The initial binary was built from `a2dcf30`; subsequent release documentation does not change executable code. [Synthetic demo screenshot](images/starframe-demo.png).
 
 The release notes record the completed gate. Windows x64 is the only binary distribution tested in this release. Existing upstream limitations in multi-layer editing/performance remain. WCS/header preservation, Bayer demosaicing, FITS export and nonlinear astronomical auto-stretch remain outside v1.
